@@ -1,23 +1,20 @@
-# Start your image with a node base image
-FROM node:18-alpine
+# Use a Debian base image
+FROM debian:stable-slim
 
-# The /app directory should act as the main application directory
-WORKDIR /app
+# Install necessary packages for Wine
+RUN dpkg --add-architecture i386 && \
+    apt-get update && \
+    apt-get install -y wine32 wget xvfb
 
-# Copy the app package and package-lock.json file
-COPY package*.json ./
+# Create a directory for REXPaint
+RUN mkdir -p /rexpaint
+WORKDIR /rexpaint
 
-# Copy local directories to the current local directory of our docker image (/app)
-COPY ./src ./src
-COPY ./public ./public
+# Copy local REXPaint files into the Docker image
+COPY /Users/gs/repos/rexpaint/REXPaint-v1.70 /rexpaint
 
-# Install node packages, install serve, build the app, and remove dependencies at the end
-RUN npm install \
-    && npm install -g serve \
-    && npm run build \
-    && rm -fr node_modules
+# Expose the display port for Xvfb
+EXPOSE 5901
 
-EXPOSE 3000
-
-# Start the app using serve command
-CMD [ "serve", "-s", "build" ]
+# Start Xvfb
+CMD ["sh", "-c", "Xvfb :1 -screen 0 1024x768x16 & bash"]
